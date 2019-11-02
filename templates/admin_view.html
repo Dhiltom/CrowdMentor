@@ -31,16 +31,15 @@
             Last name : {{ value.lname }}<br>
             Role : {{value.role}}<br>
             Email : {{ value.email }}<br>
-            Birthday : {{ value.bdate }}
+            Birthday : {{ value.bdate }}<br>
+            <a href="change_mentor/{{ value.username }}/">Edit Mentors</a>
             <hr class="my-4">
             <h5>Contract</h5>
             Salary : {{ value.salary }}<br>
             Bonus : {{ value.bonus }}<br>
             Fine : {{ value.fine }}<br>
             Total salary : {{value.total_salary}}
-            {% if user.profile.role == 'admin'%}
               <a href="{{value.id}}/reset_salary" onclick="return confirm('Are you sure you want to reset the salary?')">Reset</a>
-            {% endif %}
             <hr class="my-4">
             <h5>Statistics</h5>
             Number of tasks claimed :  {{ value.claimed }}<br>
@@ -82,9 +81,7 @@
             Bonus : {{ value.bonus }}<br>
             Fine : {{ value.fine }}<br>
             Total salary : {{value.total_salary}}
-            {% if user.profile.role == 'admin'%}
               <a href="{{value.id}}/reset_salary" onclick="return confirm('Are you sure you want to reset the salary?')">Reset</a>
-            {% endif %}
           </div>
         </div>
       </div>

@@ -22,7 +22,7 @@ def view(request):
             dict_functs['/mentor_status'] = 'Mentor Status'
             dict_functs['/help/'] = 'Help'
 
-        if profile == UserRoles.NORMAL_WORKER.value or profile == UserRoles.VIRTUAL_WORKER.value:
+        if profile == UserRoles.WORKER.value:
             dict_functs['/tasks/claimed/'] = 'Claimed tasks'
             dict_functs['/tasks/'] = 'Open tasks'
             dict_functs['/messages/'] = 'Messages'
@@ -33,10 +33,10 @@ def view(request):
             dict_functs['/tasks/audits/'] = 'Claimed Audits'
             dict_functs['/help/'] = 'Help'
 
-        if profile == UserRoles.MENTOR.value:
-            dict_functs['/messages/'] = 'Messages'
-            dict_functs['/tasks/task_status/'+str(user_id)+'/'] = 'Task Status'
-            dict_functs['/help/'] = 'Help'
+        # if profile == UserRoles.MENTOR.value:
+        #     dict_functs['/messages/'] = 'Messages'
+        #     dict_functs['/tasks/task_status/'+str(user_id)+'/'] = 'Task Status'
+        #     dict_functs['/help/'] = 'Help'
     else:
         dict_functs['/accounts/login'] = 'Login'
         dict_functs['/signup'] = 'Signup'

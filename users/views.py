@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from .models import Profile, UserRoles, Mentor, Worker
 from django.http import HttpResponseRedirect
 from django.contrib import messages
-from .UserForms import ChangeRolesForm, ChangeMentorStatus
+from .UserForms import ChangeRolesForm, ChangeMentorStatus, AddMentor
 
 def userDetails(user_id):
     dict_profile = {}
@@ -42,7 +42,7 @@ def profileview(request):
         emp_profile = {}
         profiles = Profile.objects.all()
         for worker in profiles:
-            if worker.role == UserRoles.NORMAL_WORKER.value:
+            if worker.role == UserRoles.WORKER.value:
                 profile_val = userDetails(worker.user_id)
                 dict_profile[profile_val['username']] = profile_val
 
@@ -51,7 +51,7 @@ def profileview(request):
                 emp_profile[work_val['username']] = work_val
         return render(request, 'admin_view.html', {'dict_profile': dict_profile, 'emp_profile': emp_profile})
 
-    elif profile == UserRoles.NORMAL_WORKER.value:
+    elif profile == UserRoles.WORKER.value:
         dict_profile[request.user.username] = userDetails(user_id)
         return render(request, 'home.html', {'dict_profile': dict_profile})
 
@@ -69,41 +69,25 @@ def change_roles(request):
     users = User.objects.all()
     if request.method == 'POST':
         posted_request = request.POST.dict()
-        #print(posted_request)
+        print(posted_request)
         all_keys = list(posted_request.keys())
         usrname = all_keys[len(all_keys)-1]
         usr = User.objects.get(username=usrname)
+        previous_role = usr.profile.role
         usr.profile.role = posted_request['role']
-        usr.worker.salary = posted_request['salary']
-        usr.worker.bonus = posted_request['bonus']
-        usr.worker.fine = posted_request['fine']
-        usr.worker.audit_prob_user = posted_request['audit_prob']
+        if (previous_role == UserRoles.WORKER.value) or (previous_role == UserRoles.AUDITOR.value):
+            usr.worker.salary = posted_request['salary']
+            usr.worker.bonus = posted_request['bonus']
+            usr.worker.fine = posted_request['fine']
+            usr.worker.audit_prob_user = posted_request['audit_prob']
         usr.worker.save()
         usr.profile.save()
-
-        # for user in users:
-        #     id = user.id
-        #     if 'Select' != request.POST.get('role_'+str(id)):
-        #         user.profile.role = request.POST.get('role_'+str(id))
-        #     user.worker.salary = request.POST.get('salary_' + str(id))
-        #     user.worker.bonus = request.POST.get('bonus_' + str(id))
-        #     user.worker.fine = request.POST.get('fine_' + str(id))
-        #     user.worker.audit_prob_user = request.POST.get('audit_prob_' + str(id))
-        #     #if request.POST.get('mantor_id_' + str(id)) is not 'None':
-        #     #    user.profile.mentor_id = request.POST.get('mentor_id_' + str(id))
-        #
-        #     user.save()
     user_dict=dict()
     for usr in users:
         if (usr.profile.role == UserRoles.ADMIN.value):
             continue
         user_dict[usr.username] = ChangeRolesForm(value=usr.id)
-        # prf = Profile.objects.get(user_id=usr.id)
-        # user_dict[usr.id] = [0, usr.username, usr.email, prf.role, usr.worker.salary, usr.worker.bonus, usr.worker.fine,
-        #                      usr.worker.audit_prob_user]
-        # user_dict_html[usr.id] = [(prf.role==UserRoles.NORMAL_WORKER.value), usr.username, prf.role, i, i+1, i+2, i+3, i+4, i+5]
 
-    #form = ChangeRolesForm(users=user_dict)
     return render(request, 'changeRoles.html', {'user_dict':user_dict})
 
 
@@ -130,14 +114,109 @@ def mentor_status(request):
         usr_id = User.objects.get(username=usrname).id
         worker = Worker.objects.get(user_id=usr_id)
         value = request.POST.get("mentor_status")
+        if value == 'True':
+            value = True
+        else:
+            value = False
         worker.is_Mentor = value
         worker.save()
+        try:
+            if not (value==True):
+                print('deleting')
+                usr = User.objects.get(username=usrname)
+                Mentor.objects.get(user_id=usr_id).delete()
+                usr.save()
+                mentors = Mentor.objects.all()
+                mentors_list = []
+                for mentor in mentors:
+                    mentors_list.append(mentor.user.username)
+        except:
+            pass
+        try:
+            if (value==True):
+                print('creating')
+                usr = User.objects.get(username=usrname)
+                Mentor.objects.create(user=usr)
+                usr.mentor.save()
+                mentors = Mentor.objects.all()
+                mentors_list = []
+                for mentor in mentors:
+                    mentors_list.append(mentor.user.username)
+        except:
+            pass
 
     worker_context = {}
     for profile in profiles:
-        if profile.role == UserRoles.NORMAL_WORKER.value:
+        if profile.role == UserRoles.WORKER.value:
             worker_context[profile.user.username] = ChangeMentorStatus(value=profile.user.worker.is_Mentor)
 
     return render(request, 'mentorStatus.html', {'user_dict': worker_context})
 
 
+
+
+@login_required
+def change_mentor(request, usrname):
+    user = User.objects.get(username=request.user.username)
+    profile = user.profile.role
+    if profile != 'admin':
+        messages.warning(request, 'Permission Denied!! You do not have permission to access this page')
+        return HttpResponseRedirect('/')
+
+    usr = User.objects.get(username=usrname)
+    usr_mentors = user.sam.get_mentors()
+
+    mentors = Mentor.objects.all()
+    mentors_list = []
+
+    for mentor in mentors:
+        mentors_list.append(mentor.user.username)
+
+    print(mentors_list)
+
+    cur_mentor = usr.sam.get_mentors()
+    new_form = AddMentor(mentor_choices=mentors_list,
+                         pool=usr.worker.worker_pool, cur_mentor=cur_mentor,
+                         set_mentor=None, set_pool=None, submitted= False)
+
+    if request.method == 'POST':
+
+        set_mentor = request.POST.get('mentor_ch')
+        set_pool = request.POST.get('pool')
+        form = AddMentor(mentor_choices=mentors_list,
+                         pool=usr.worker.worker_pool, cur_mentor=cur_mentor,
+                         set_mentor=set_mentor, set_pool=set_pool, submitted= True)
+        if form.is_valid():
+            print('form_valid')
+            selected_pool = form.cleaned_data.get('pool')
+            if usr.worker.worker_pool != selected_pool:
+                for mentor in usr_mentors:
+                    mentor_user = User.objects.get(username=mentor)
+                    mentees_list = mentor_user.worker.get_mentees()
+                    mentees_list.remove(usr)
+                    mentor_user.worker.set_mentees(mentees_list)
+                    mentor_user.worker.save()
+                usr_mentors = [form.cleaned_data.get('mentor_ch')]
+            else:
+                new_mentor = form.cleaned_data.get('mentor_ch')
+                usr_mentors.append(new_mentor)
+                mentor_user = User.objects.get(username=new_mentor)
+                mentees_list = mentor_user.worker.get_mentees()
+                if usrname not in mentees_list:
+                    mentees_list.append(usrname)
+                mentor_user.worker.set_mentees(mentees_list)
+                mentor_user.worker.save()
+            usr.sam.set_mentors(usr_mentors)
+
+    mentors = Mentor.objects.all()
+    mentors_list = []
+
+    for mentor in mentors:
+        mentors_list.append(mentor.user.username)
+
+    cur_mentor = usr.sam.get_mentors()
+    new_form = AddMentor(mentor_choices=mentors_list,
+                         pool=usr.worker.worker_pool, cur_mentor=cur_mentor,
+                         set_mentor=None, set_pool=None, submitted= False)
+
+    return render(request, 'changeMentor.html', {'username':usrname, 'cur_mentor': cur_mentor, 'form':new_form})

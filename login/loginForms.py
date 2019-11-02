@@ -9,7 +9,7 @@ class SignUpForm(UserCreationForm):
     email = forms.EmailField(max_length=254, help_text='Required')
     birth_date = forms.DateField(required=False)
     CHOICES = [
-        (UserRoles.NORMAL_WORKER.value,'Worker'),
+        (UserRoles.WORKER.value,'Worker'),
         (UserRoles.TASK_UPDATER.value, "Task Updater"),
         (UserRoles.AUDITOR.value, "Auditor")
     ]

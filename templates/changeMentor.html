@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h4>Change Mentors for {{ username }}</h4>
+<h5>Current Mentors</h5>
+<div class="d-flex">
+    {% for mentor in cur_mentor %}
+    <p>{{ mentor }}</p>
+    {% endfor %}
+</div>
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <p>
+            {{ field.label_tag }} <br>
+            {{ field }}
+        </p>
+        {% endfor %}
+        <button type="submit" id="submit_form" class="btn btn-danger">
+            Update
+        </button>
+    </form>
+</div>
+
+{% endblock %}

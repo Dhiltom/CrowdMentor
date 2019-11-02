@@ -10,6 +10,7 @@ from django.db.models.signals import post_save
 
 
 TRUE_OR_FALSE = [(True,'Yes'), (False,'No')]
+pool_choices = [('A','A'),('B','B')]
 
 
 
@@ -17,9 +18,7 @@ class UserRoles(Enum):
     ADMIN = 'admin'
     TASK_UPDATER = 'task_updater'
     AUDITOR = 'auditor'
-    NORMAL_WORKER = 'worker'
-    MENTOR = 'mentor'
-    VIRTUAL_WORKER = 'virtual_worker'
+    WORKER = 'worker'
 
 
 class Profile(models.Model):
@@ -29,7 +28,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     Birth_date = models.DateField(null=True, blank=True)
     role = models.CharField(max_length=15, choices=[(tag.value, tag.value) for tag in UserRoles],
-                            default=UserRoles.NORMAL_WORKER.value)
+                            default=UserRoles.WORKER.value)
 
 
 class Worker(models.Model):
@@ -48,7 +47,7 @@ class Worker(models.Model):
     claimed_tasks = models.IntegerField(default=0)
     is_Mentor = models.BooleanField(choices=TRUE_OR_FALSE,default=False)
     mentees = models.CharField(max_length=10000,default='[]')
-    worker_pool = models.CharField(max_length=1,choices=[('A','A'),('B','B')], default='A')
+    worker_pool = models.CharField(max_length=1,choices=pool_choices, default='A')
 
     def set_mentees(self, mentees_list):
         self.mentees = json.dumps(mentees_list)
